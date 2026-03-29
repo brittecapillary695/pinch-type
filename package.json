@@ -1,0 +1,55 @@
+{
+  "name": "pinch-type",
+  "version": "0.1.0",
+  "description": "Pinch to zoom text, not the page. Canvas-based text scaling for mobile web.",
+  "author": "Lucas Crespo",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "pinch-to-zoom",
+    "text-scaling",
+    "typography",
+    "mobile",
+    "canvas",
+    "touch",
+    "zoom",
+    "pretext"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucascrespo/pinch-type"
+  },
+  "homepage": "https://github.com/lucascrespo/pinch-type#readme",
+  "bugs": {
+    "url": "https://github.com/lucascrespo/pinch-type/issues"
+  },
+  "peerDependencies": {
+    "@chenglou/pretext": ">=0.0.2"
+  },
+  "devDependencies": {
+    "@chenglou/pretext": "^0.0.2",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.7.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  }
+}

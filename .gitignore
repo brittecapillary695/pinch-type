@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+examples/basic/bundle.js
+examples/basic/bundle.js.map
+.DS_Store

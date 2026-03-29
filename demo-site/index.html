@@ -6,83 +6,89 @@
 <title>pinch-type — Pinch to zoom text, not the page</title>
 <meta name="description" content="Canvas-based text effects for mobile web: pinch-to-zoom, scroll morph fisheye, or both combined.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#050505;--surface:#0a0a0a;--border:#1a1a1a;--text:#e5e5e5;--dim:#777;--accent:#a78bfa}
 html{scroll-behavior:smooth}
-body{font-family:"Inter",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+body{font-family:"Inter",system-ui,sans-serif;background:#fff;color:#111;line-height:1.7;-webkit-font-smoothing:antialiased;font-size:15px}
+
+h1,h2,h3{font-family:"Instrument Serif",Georgia,serif;font-weight:400;color:#000}
+
+a{color:#111;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:3px;transition:text-decoration-color .2s}
+a:hover{text-decoration-color:#000}
 
 /* Hero */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative}
-.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:700;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1rem}
-.hero h1 span{background:linear-gradient(135deg,#a78bfa,#6ee7b7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero p{font-size:1.15rem;color:var(--dim);max-width:520px;margin-bottom:2rem}
+.hero{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:3rem 2rem;position:relative}
+.hero h1{font-size:clamp(3rem,8vw,6rem);line-height:1.05;margin-bottom:1.5rem;letter-spacing:-0.02em}
+.hero h1 em{font-style:italic}
+.hero p{font-size:1.05rem;color:#666;max-width:480px;margin-bottom:2.5rem;line-height:1.7}
 .hero-links{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
-.hero-links a{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;font-size:.9rem;font-weight:500;text-decoration:none;transition:all .2s}
-.btn-primary{background:#fff;color:#000}
-.btn-primary:hover{background:#e5e5e5}
-.btn-ghost{border:1px solid var(--border);color:var(--text)}
-.btn-ghost:hover{border-color:#333;background:rgba(255,255,255,.04)}
-.scroll-hint{position:absolute;bottom:2rem;color:var(--dim);font-size:.8rem;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.hero-links a{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.5rem;font-size:.85rem;font-weight:500;text-decoration:none;transition:all .2s;letter-spacing:.01em}
+.btn-primary{border:1.5px solid #000;color:#000;background:#fff}
+.btn-primary:hover{background:#000;color:#fff}
+.btn-ghost{border:1.5px solid #ddd;color:#999}
+.btn-ghost:hover{border-color:#000;color:#000}
+.scroll-hint{position:absolute;bottom:2.5rem;color:#bbb;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.8}}
 
 /* Demo */
-.demo-section{padding:4rem 1.5rem;max-width:900px;margin:0 auto}
-.demo-section h2{font-size:1.6rem;font-weight:600;margin-bottom:.5rem;letter-spacing:-0.02em}
-.demo-section .subtitle{color:var(--dim);margin-bottom:1.5rem;font-size:.95rem}
+.demo-section{padding:5rem 1.5rem;max-width:860px;margin:0 auto}
+.demo-section h2{font-size:2rem;margin-bottom:.4rem}
+.demo-section .subtitle{color:#999;margin-bottom:2rem;font-size:.9rem}
 
 /* Mode Tabs */
-.mode-tabs{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
-.mode-tab{padding:.55rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--dim);transition:all .2s;user-select:none}
-.mode-tab:hover{border-color:#333;color:var(--text)}
-.mode-tab.active{background:rgba(167,139,250,.12);border-color:var(--accent);color:var(--accent)}
+.mode-tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid #e5e5e5}
+.mode-tab{padding:.6rem 1.2rem;font-size:.85rem;cursor:pointer;border:none;background:transparent;color:#999;transition:all .2s;user-select:none;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:"Inter",system-ui,sans-serif}
+.mode-tab:hover{color:#000}
+.mode-tab.active{color:#000;border-bottom-color:#000}
 
-#mode-desc{color:var(--dim);font-size:.85rem;margin-bottom:1.5rem;min-height:1.4em}
+#mode-desc{color:#999;font-size:.85rem;margin-bottom:1.5rem;min-height:1.4em}
 
-#demo-canvas{width:100%;height:70vh;min-height:500px;border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--surface)}
-.demo-hint{text-align:center;color:var(--dim);font-size:.8rem;margin-top:1rem}
+#demo-canvas{width:100%;height:70vh;min-height:500px;border-radius:2px;border:1px solid #e5e5e5;overflow:hidden;background:#0a0a0a}
+.demo-hint{text-align:center;color:#bbb;font-size:.75rem;margin-top:1rem;letter-spacing:.02em}
 
 /* Sections */
-section{padding:5rem 1.5rem;max-width:720px;margin:0 auto}
-section h2{font-size:1.8rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:1.5rem}
+section{padding:6rem 1.5rem;max-width:640px;margin:0 auto}
+section h2{font-size:2.2rem;margin-bottom:1.5rem}
 
 /* How it works */
-.features{display:grid;gap:1.5rem;margin-top:1.5rem}
-.feature{padding:1.5rem;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid var(--border)}
-.feature h3{font-size:1rem;font-weight:600;margin-bottom:.4rem}
-.feature p{color:var(--dim);font-size:.9rem;line-height:1.6}
+.features{display:grid;gap:2.5rem;margin-top:2rem}
+.feature h3{font-size:1.15rem;margin-bottom:.3rem}
+.feature p{color:#666;font-size:.9rem;line-height:1.7}
 
 /* Code */
-.code-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;overflow-x:auto;margin:1.5rem 0;font-size:.85rem;line-height:1.7}
-.code-block code{font-family:"JetBrains Mono",monospace;color:#c4b5fd}
-.code-block .comment{color:#555}
-.code-block .str{color:#6ee7b7}
-.code-block .kw{color:#a78bfa}
-.code-block .fn{color:#93c5fd}
+.code-block{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:3px;padding:1.25rem 1.5rem;overflow-x:auto;margin:1.5rem 0;font-size:.84rem;line-height:1.8}
+.code-block code{font-family:"JetBrains Mono",monospace;color:#333}
+.code-block .comment{color:#999}
+.code-block .str{color:#555}
+.code-block .kw{color:#000;font-weight:500}
+.code-block .fn{color:#333}
 
 /* Install */
-.install-box{display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.5rem;font-family:"JetBrains Mono",monospace;font-size:.95rem;margin:1rem 0}
-.install-box .dollar{color:#555;user-select:none}
-.install-box .cmd{color:#a78bfa}
+.install-box{display:flex;align-items:center;gap:.75rem;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:3px;padding:1rem 1.5rem;font-family:"JetBrains Mono",monospace;font-size:.9rem;margin:1rem 0}
+.install-box .dollar{color:#bbb;user-select:none}
+.install-box .cmd{color:#111}
+
+/* Divider */
+.divider{width:40px;height:1px;background:#ddd;margin:0 auto}
 
 /* Footer */
-footer{text-align:center;padding:4rem 1.5rem 3rem;color:var(--dim);font-size:.85rem}
-footer a{color:var(--accent);text-decoration:none}
-footer a:hover{text-decoration:underline}
+footer{text-align:center;padding:5rem 1.5rem 3rem;color:#bbb;font-size:.8rem;letter-spacing:.01em}
+footer a{color:#999;text-decoration:none}
+footer a:hover{color:#000}
 </style>
 </head>
 <body>
 
 <!-- Hero -->
 <div class="hero">
-  <h1>pinch-<span>type</span></h1>
-  <p>Three canvas-based text effects for mobile web: pinch-to-zoom, scroll morph, or both combined. Built on <a href="https://github.com/chenglou/pretext" style="color:var(--accent);text-decoration:none">@chenglou/pretext</a>.</p>
+  <h1>pinch-<em>type</em></h1>
+  <p>Three canvas-based text effects for mobile web: pinch-to-zoom, scroll morph, or both combined. Built on <a href="https://github.com/chenglou/pretext">@chenglou/pretext</a>.</p>
   <div class="hero-links">
-    <a href="https://github.com/lucascrespo23/pinch-type" class="btn-primary">★ GitHub</a>
+    <a href="https://github.com/lucascrespo23/pinch-type" class="btn-primary">GitHub</a>
     <a href="#demo" class="btn-ghost">See it in action ↓</a>
   </div>
-  <div class="scroll-hint">Scroll down to try the demo</div>
+  <div class="scroll-hint">Scroll to explore</div>
 </div>
 
 <!-- Live Demo -->
@@ -98,7 +104,7 @@ footer a:hover{text-decoration:underline}
   <p id="mode-desc">Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.</p>
 
   <div id="demo-canvas"></div>
-  <p class="demo-hint">📱 Pinch with two fingers to zoom text &nbsp;·&nbsp; 🖱️ Scroll wheel to navigate</p>
+  <p class="demo-hint">📱 Pinch with two fingers to zoom text · 🖱️ Scroll wheel to navigate</p>
 </div>
 
 <!-- How it works -->
@@ -107,11 +113,11 @@ footer a:hover{text-decoration:underline}
   <div class="features">
     <div class="feature">
       <h3>Pinch Type</h3>
-      <p>Intercepts pinch-to-zoom gestures on mobile and scales text size instead of zooming the page. Text stays in place — just bigger or smaller. No fisheye, no morph.</p>
+      <p>Intercepts pinch-to-zoom gestures on mobile and scales text size instead of zooming the page. Text stays in place — just bigger or smaller.</p>
     </div>
     <div class="feature">
       <h3>Scroll Morph</h3>
-      <p>A fisheye reading lens: lines near the viewport center render large and bright, lines at the edges shrink and fade. Creates a natural magnifying effect as you scroll.</p>
+      <p>A fisheye reading lens: lines near the viewport center render large and bright, lines at the edges shrink and fade. A natural magnifying effect as you scroll.</p>
     </div>
     <div class="feature">
       <h3>Combined</h3>
@@ -119,10 +125,12 @@ footer a:hover{text-decoration:underline}
     </div>
     <div class="feature">
       <h3>Accurate Line Breaking</h3>
-      <p>Text is measured and wrapped using <a href="https://github.com/chenglou/pretext" style="color:var(--accent)">@chenglou/pretext</a> for segment-aware, pixel-perfect line breaking on canvas.</p>
+      <p>Text is measured and wrapped using <a href="https://github.com/chenglou/pretext">@chenglou/pretext</a> for segment-aware, pixel-perfect line breaking on canvas.</p>
     </div>
   </div>
 </section>
+
+<div class="divider"></div>
 
 <!-- Install -->
 <section>

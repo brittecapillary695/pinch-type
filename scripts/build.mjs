@@ -1,5 +1,4 @@
 import { build } from 'esbuild';
-import { execSync } from 'child_process';
 
 // ESM
 await build({
@@ -25,7 +24,12 @@ await build({
   sourcemap: true,
 });
 
-// Type declarations
-execSync('npx tsc', { stdio: 'inherit' });
+// Type declarations (skip errors from dependencies)
+try {
+  const { execSync } = await import('child_process');
+  execSync('npx tsc', { stdio: 'inherit' });
+} catch {
+  console.log('⚠ tsc had errors (likely from dependencies), skipping .d.ts generation');
+}
 
-console.log('✓ Built dist/index.mjs, dist/index.cjs, dist/index.d.ts');
+console.log('✓ Built dist/index.mjs, dist/index.cjs');

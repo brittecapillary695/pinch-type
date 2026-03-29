@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>pinch-type — Pinch to zoom text, not the page</title>
-<meta name="description" content="A tiny library that intercepts pinch-to-zoom on mobile and scales text instead of zooming the viewport. Canvas-based scroll morph effect.">
+<meta name="description" content="Canvas-based text effects for mobile web: pinch-to-zoom, scroll morph fisheye, or both combined.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
@@ -17,7 +17,7 @@ body{font-family:"Inter",system-ui,-apple-system,sans-serif;background:var(--bg)
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative}
 .hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:700;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1rem}
 .hero h1 span{background:linear-gradient(135deg,#a78bfa,#6ee7b7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero p{font-size:1.15rem;color:var(--dim);max-width:480px;margin-bottom:2rem}
+.hero p{font-size:1.15rem;color:var(--dim);max-width:520px;margin-bottom:2rem}
 .hero-links{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
 .hero-links a{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;font-size:.9rem;font-weight:500;text-decoration:none;transition:all .2s}
 .btn-primary{background:#fff;color:#000}
@@ -30,7 +30,16 @@ body{font-family:"Inter",system-ui,-apple-system,sans-serif;background:var(--bg)
 /* Demo */
 .demo-section{padding:4rem 1.5rem;max-width:900px;margin:0 auto}
 .demo-section h2{font-size:1.6rem;font-weight:600;margin-bottom:.5rem;letter-spacing:-0.02em}
-.demo-section .subtitle{color:var(--dim);margin-bottom:2rem;font-size:.95rem}
+.demo-section .subtitle{color:var(--dim);margin-bottom:1.5rem;font-size:.95rem}
+
+/* Mode Tabs */
+.mode-tabs{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.mode-tab{padding:.55rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--dim);transition:all .2s;user-select:none}
+.mode-tab:hover{border-color:#333;color:var(--text)}
+.mode-tab.active{background:rgba(167,139,250,.12);border-color:var(--accent);color:var(--accent)}
+
+#mode-desc{color:var(--dim);font-size:.85rem;margin-bottom:1.5rem;min-height:1.4em}
+
 #demo-canvas{width:100%;height:70vh;min-height:500px;border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--surface)}
 .demo-hint{text-align:center;color:var(--dim);font-size:.8rem;margin-top:1rem}
 
@@ -68,7 +77,7 @@ footer a:hover{text-decoration:underline}
 <!-- Hero -->
 <div class="hero">
   <h1>pinch-<span>type</span></h1>
-  <p>Pinch to zoom text, not the page. Canvas-based text scaling for mobile web, built on <a href="https://github.com/chenglou/pretext" style="color:var(--accent);text-decoration:none">@chenglou/pretext</a>.</p>
+  <p>Three canvas-based text effects for mobile web: pinch-to-zoom, scroll morph, or both combined. Built on <a href="https://github.com/chenglou/pretext" style="color:var(--accent);text-decoration:none">@chenglou/pretext</a>.</p>
   <div class="hero-links">
     <a href="https://github.com/lucascrespo23/pinch-type" class="btn-primary">★ GitHub</a>
     <a href="#demo" class="btn-ghost">See it in action ↓</a>
@@ -79,30 +88,38 @@ footer a:hover{text-decoration:underline}
 <!-- Live Demo -->
 <div class="demo-section" id="demo">
   <h2>Live Demo</h2>
-  <p class="subtitle">Scroll to read. On mobile, pinch to scale the text. On desktop, use the scroll wheel.</p>
+  <p class="subtitle">Switch between effects to see what each one does.</p>
+
+  <div class="mode-tabs">
+    <button class="mode-tab" data-mode="pinch">Pinch Type</button>
+    <button class="mode-tab" data-mode="morph">Scroll Morph</button>
+    <button class="mode-tab active" data-mode="combined">Combined</button>
+  </div>
+  <p id="mode-desc">Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.</p>
+
   <div id="demo-canvas"></div>
   <p class="demo-hint">📱 Pinch with two fingers to zoom text &nbsp;·&nbsp; 🖱️ Scroll wheel to navigate</p>
 </div>
 
 <!-- How it works -->
 <section>
-  <h2>How it works</h2>
+  <h2>Three effects</h2>
   <div class="features">
     <div class="feature">
-      <h3>Scroll Morph</h3>
-      <p>Lines near the center of the viewport render large and bright. Lines at the edges shrink and fade. The result is a natural reading focus that follows your scroll position.</p>
+      <h3>Pinch Type</h3>
+      <p>Intercepts pinch-to-zoom gestures on mobile and scales text size instead of zooming the page. Text stays in place — just bigger or smaller. No fisheye, no morph.</p>
     </div>
     <div class="feature">
-      <h3>Pinch to Zoom</h3>
-      <p>Two-finger pinch gestures on mobile scale the text range in real time — no page zoom, no layout shift. Just bigger or smaller text, instantly.</p>
+      <h3>Scroll Morph</h3>
+      <p>A fisheye reading lens: lines near the viewport center render large and bright, lines at the edges shrink and fade. Creates a natural magnifying effect as you scroll.</p>
+    </div>
+    <div class="feature">
+      <h3>Combined</h3>
+      <p>Both effects together. The scroll morph fisheye plus pinch-to-zoom scaling. The full experience.</p>
     </div>
     <div class="feature">
       <h3>Accurate Line Breaking</h3>
       <p>Text is measured and wrapped using <a href="https://github.com/chenglou/pretext" style="color:var(--accent)">@chenglou/pretext</a> for segment-aware, pixel-perfect line breaking on canvas.</p>
-    </div>
-    <div class="feature">
-      <h3>Momentum Scrolling</h3>
-      <p>Touch scrolling with configurable friction and edge bounce. Feels native. Works everywhere.</p>
     </div>
   </div>
 </section>
@@ -115,34 +132,19 @@ footer a:hover{text-decoration:underline}
     <span class="cmd">npm install pinch-type @chenglou/pretext</span>
   </div>
 
-  <div class="code-block"><code><span class="kw">import</span> { <span class="fn">createPinchType</span> } <span class="kw">from</span> <span class="str">'pinch-type'</span>;
+  <div class="code-block"><code><span class="kw">import</span> { <span class="fn">createPinchType</span>, <span class="fn">createScrollMorph</span>, <span class="fn">createPinchMorph</span> } <span class="kw">from</span> <span class="str">'pinch-type'</span>;
 
-<span class="kw">const</span> pt = <span class="fn">createPinchType</span>(document.<span class="fn">getElementById</span>(<span class="str">'reader'</span>));
+<span class="comment">// Pinch-only: uniform text, pinch to scale</span>
+<span class="kw">const</span> pt = <span class="fn">createPinchType</span>(element);
 
-pt.<span class="fn">setText</span>(<span class="str">'Your long article text here…'</span>);
+<span class="comment">// Scroll morph: fisheye effect, no pinch</span>
+<span class="kw">const</span> sm = <span class="fn">createScrollMorph</span>(element);
 
-<span class="comment">// Pinch-to-zoom works automatically on mobile.</span>
-<span class="comment">// Call pt.destroy() to clean up.</span></code></div>
-</section>
+<span class="comment">// Combined: fisheye + pinch zoom</span>
+<span class="kw">const</span> pm = <span class="fn">createPinchMorph</span>(element);
 
-<!-- API -->
-<section>
-  <h2>Options</h2>
-  <div class="code-block"><code><span class="fn">createPinchType</span>(element, {
-  <span class="comment">// Font size at viewport center (default: 26)</span>
-  initialFontSize: <span class="str">26</span>,
-  <span class="comment">// Font size at viewport edges (default: 11)</span>
-  edgeFontSize: <span class="str">11</span>,
-  <span class="comment">// Min/max zoom bounds</span>
-  minFontSize: <span class="str">8</span>,
-  maxFontSize: <span class="str">60</span>,
-  <span class="comment">// Scroll momentum friction (0–1)</span>
-  friction: <span class="str">0.95</span>,
-  <span class="comment">// Morph gradient radius in px</span>
-  morphRadius: <span class="str">300</span>,
-  <span class="comment">// Zoom callback</span>
-  onZoom: (center, edge) => <span class="fn">console.log</span>({ center, edge }),
-});</code></div>
+instance.<span class="fn">setText</span>(<span class="str">'Your article text…'</span>);
+instance.<span class="fn">destroy</span>();  <span class="comment">// clean up</span></code></div>
 </section>
 
 <footer>

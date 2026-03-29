@@ -1,4 +1,4 @@
-import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
+import { createPinchType, createScrollMorph, createPinchMorph } from '../../src/index.ts';
 
 const TEXT = `Build Places, Not Products
 
@@ -34,179 +34,48 @@ Every surface someone touches should feel like somewhere they chose to be. Every
 
 The internet doesn't have to look like an office park. We can add texture. We can create depth. We can build places worth being. Make the internet beautiful. That's the guiding principle. Everything else follows.`;
 
-const FONT_FAMILY = '"Inter", system-ui, -apple-system, sans-serif';
-const PADDING = 28;
-const BG = '#0a0a0a';
-const MORPH_RADIUS = 300;
-const FRICTION = 0.95;
+const DESCRIPTIONS = {
+  pinch: 'Uniform text rendering. Pinch with two fingers to scale all text up or down. No fisheye effect.',
+  morph: 'Text near the center is large and bright. Text at the edges shrinks and fades. A fisheye magnifying effect as you scroll.',
+  combined: 'Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.',
+};
 
-let canvas, ctx, dpr, W, H;
-let lines = [];
-let totalHeight = 0, maxScroll = 0;
-let scrollY = 0, scrollVelocity = 0;
-let touchLastY = 0, touchLastTime = 0, isTouching = false;
-let pinchActive = false, pinchStartDist = 0, pinchStartCenter = 0, pinchStartEdge = 0;
-let CENTER_FONT_SIZE = 26, EDGE_FONT_SIZE = 11;
+let currentInstance = null;
+let currentMode = 'combined';
+
+const creators = {
+  pinch: (el) => createPinchType(el, { fontSize: 18 }),
+  morph: (el) => createScrollMorph(el, { centerFontSize: 26, edgeFontSize: 11 }),
+  combined: (el) => createPinchMorph(el, { centerFontSize: 26, edgeFontSize: 11 }),
+};
+
+function switchMode(mode) {
+  if (currentInstance) currentInstance.destroy();
+  currentMode = mode;
+
+  // Update tabs
+  document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.mode === mode);
+  });
+
+  // Update description
+  document.getElementById('mode-desc').textContent = DESCRIPTIONS[mode];
+
+  // Create new instance
+  const container = document.getElementById('demo-canvas');
+  currentInstance = creators[mode](container);
+  currentInstance.canvas.style.borderRadius = '12px';
+  currentInstance.setText(TEXT);
+}
 
 function init() {
-  const container = document.getElementById('demo-canvas');
-  canvas = document.createElement('canvas');
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.touchAction = 'none';
-  canvas.style.borderRadius = '12px';
-  container.appendChild(canvas);
-  ctx = canvas.getContext('2d');
-  resize();
-  window.addEventListener('resize', resize);
-  setupTouch();
-  setupWheel();
-  requestAnimationFrame(loop);
-}
-
-function resize() {
-  const container = document.getElementById('demo-canvas');
-  dpr = Math.min(devicePixelRatio || 1, 3);
-  W = container.clientWidth;
-  H = container.clientHeight;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  layoutText();
-}
-
-function layoutText() {
-  const maxW = W - PADDING * 2;
-  const fs = CENTER_FONT_SIZE;
-  const lh = fs * (22 / 14);
-  const titleFs = 32, titleLh = 40;
-  const paragraphs = TEXT.split('\n\n');
-  lines = [];
-  let curY = PADDING + 10;
-
-  for (let pi = 0; pi < paragraphs.length; pi++) {
-    const para = paragraphs[pi].trim();
-    if (!para) continue;
-    const isFirst = pi === 0;
-    const isSubhead = !isFirst && para.length < 60 && !para.includes('.');
-    const useFontSize = isFirst ? titleFs : fs;
-    const useLineHeight = isFirst ? titleLh : lh;
-    const weight = (isFirst || isSubhead) ? 600 : 400;
-    const font = `${weight} ${useFontSize}px ${FONT_FAMILY}`;
-    ctx.font = font;
-    const prepared = prepareWithSegments(para, font);
-    const result = layoutWithLines(prepared, maxW, useLineHeight);
-    for (let li = 0; li < result.lines.length; li++) {
-      lines.push({
-        text: result.lines[li].text,
-        y: curY + li * useLineHeight,
-        isTitle: isFirst, isSubhead,
-        baseSize: useFontSize, weight,
-      });
-    }
-    curY += result.lines.length * useLineHeight;
-    curY += isFirst ? titleLh * 0.5 : lh * 0.6;
-  }
-  totalHeight = curY + PADDING;
-  maxScroll = Math.max(0, totalHeight - H);
-}
-
-function pinchDist(e) {
-  const dx = e.touches[0].clientX - e.touches[1].clientX;
-  const dy = e.touches[0].clientY - e.touches[1].clientY;
-  return Math.hypot(dx, dy);
-}
-
-function setupTouch() {
-  canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
-      pinchActive = true; pinchStartDist = pinchDist(e);
-      pinchStartCenter = CENTER_FONT_SIZE; pinchStartEdge = EDGE_FONT_SIZE;
-      scrollVelocity = 0; isTouching = false;
-    } else if (e.touches.length === 1 && !pinchActive) {
-      isTouching = true; scrollVelocity = 0;
-      touchLastY = e.touches[0].clientY;
-      touchLastTime = performance.now();
-    }
-    e.preventDefault();
-  }, { passive: false });
-
-  canvas.addEventListener('touchmove', (e) => {
-    if (pinchActive && e.touches.length === 2) {
-      const scale = pinchDist(e) / pinchStartDist;
-      const nc = Math.round(Math.min(60, Math.max(14, pinchStartCenter * scale)));
-      const ne = Math.round(Math.min(30, Math.max(6, pinchStartEdge * scale)));
-      if (nc !== CENTER_FONT_SIZE || ne !== EDGE_FONT_SIZE) {
-        CENTER_FONT_SIZE = nc; EDGE_FONT_SIZE = ne; layoutText();
-      }
-      e.preventDefault(); return;
-    }
-    if (!isTouching) return;
-    const y = e.touches[0].clientY;
-    const dy = touchLastY - y;
-    const now = performance.now();
-    const dt = now - touchLastTime;
-    scrollY += dy;
-    scrollY = Math.max(-50, Math.min(maxScroll + 50, scrollY));
-    if (dt > 0) scrollVelocity = (dy / dt) * 16;
-    touchLastY = y; touchLastTime = now;
-    e.preventDefault();
-  }, { passive: false });
-
-  canvas.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) pinchActive = false;
-    if (e.touches.length === 0) isTouching = false;
+  // Setup tab listeners
+  document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchMode(tab.dataset.mode));
   });
-}
 
-function setupWheel() {
-  canvas.addEventListener('wheel', (e) => {
-    scrollY += e.deltaY;
-    scrollY = Math.max(-50, Math.min(maxScroll + 50, scrollY));
-    e.preventDefault();
-  }, { passive: false });
-}
-
-function loop() {
-  if (!isTouching) {
-    scrollY += scrollVelocity;
-    scrollVelocity *= FRICTION;
-    if (scrollY < 0) { scrollY *= 0.85; scrollVelocity *= 0.5; }
-    else if (scrollY > maxScroll) { scrollY = maxScroll + (scrollY - maxScroll) * 0.85; scrollVelocity *= 0.5; }
-    if (Math.abs(scrollVelocity) < 0.1) scrollVelocity = 0;
-  }
-  render();
-  requestAnimationFrame(loop);
-}
-
-function render() {
-  const d = dpr;
-  ctx.fillStyle = BG;
-  ctx.fillRect(0, 0, W * d, H * d);
-  const viewCenter = H / 2;
-  ctx.textBaseline = 'top';
-
-  for (const line of lines) {
-    const screenY = line.y - scrollY;
-    if (screenY < -80 || screenY > H + 80) continue;
-    const dist = Math.abs(screenY - viewCenter);
-    const t = Math.min(dist / MORPH_RADIUS, 1);
-    const ease = 1 - (1 - t) ** 3;
-
-    const centerSize = line.isTitle ? 32 : line.isSubhead ? 28 : CENTER_FONT_SIZE;
-    const edgeSize = line.isTitle ? 14 : line.isSubhead ? 12 : EDGE_FONT_SIZE;
-    const fontSize = centerSize + (edgeSize - centerSize) * ease;
-    const opacity = 1.0 + (0.25 - 1.0) * ease;
-    const c = Math.round(255 - (255 - 102) * ease);
-
-    ctx.save();
-    ctx.globalAlpha = opacity;
-    ctx.fillStyle = `rgb(${c},${c},${c})`;
-    ctx.font = `${line.weight} ${fontSize * d}px ${FONT_FAMILY}`;
-    const yOffset = (fontSize - line.baseSize) * 0.5;
-    ctx.fillText(line.text, PADDING * d, (screenY - yOffset) * d);
-    ctx.restore();
-  }
+  // Boot with combined
+  switchMode('combined');
 }
 
 if (document.readyState === 'loading') {

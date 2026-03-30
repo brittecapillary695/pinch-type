@@ -72,13 +72,14 @@ function getAnchorAtY(target: HTMLElement, viewportY: number) {
   };
 }
 
-function restoreAnchor(anchor: { element: Element; offsetFromTop: number; viewportY: number }) {
-  const rect = anchor.element.getBoundingClientRect();
-  const currentY = rect.top + anchor.offsetFromTop;
-  const drift = currentY - anchor.viewportY;
-  if (Math.abs(drift) > 1) {
-    window.scrollBy(0, drift);
+function getScrollParent(el: HTMLElement): HTMLElement {
+  let node: HTMLElement | null = el.parentElement;
+  while (node) {
+    const overflow = getComputedStyle(node).overflowY;
+    if (overflow === 'auto' || overflow === 'scroll') return node;
+    node = node.parentElement;
   }
+  return document.documentElement;
 }
 
 // ─── Vanilla API ─────────────────────────────────────────────────────────────
@@ -105,12 +106,26 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
   function setSize(s: number, anchorY?: number) {
     const clamped = clamp(Math.round(s), min, max);
     if (clamped !== size) {
-      // Capture anchor before resize
-      const anchor = getAnchorAtY(target, anchorY ?? window.innerHeight / 2);
+      // Find the scrollable ancestor
+      const scrollParent = getScrollParent(target);
+      const vy = anchorY ?? window.innerHeight / 2;
+
+      // Capture anchor: element at viewport Y + its position relative to viewport
+      const anchor = getAnchorAtY(target, vy);
+      const beforeRect = anchor.element.getBoundingClientRect();
+      const beforeTop = beforeRect.top;
+
+      // Apply new size
       size = clamped;
       target.style.fontSize = size + 'px';
-      // Restore anchor after reflow
-      restoreAnchor(anchor);
+
+      // After reflow, see how much the anchor moved and compensate
+      const afterRect = anchor.element.getBoundingClientRect();
+      const drift = afterRect.top - beforeTop;
+      if (Math.abs(drift) > 0.5) {
+        scrollParent.scrollTop += drift;
+      }
+
       onZoom?.(size);
     }
   }

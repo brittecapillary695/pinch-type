@@ -10,6 +10,9 @@
  * @author Lucas Crespo
  */
 
+export { pinchZoom, usePinchZoom } from './lightweight';
+export type { PinchZoomOptions, UsePinchZoomOptions } from './lightweight';
+
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

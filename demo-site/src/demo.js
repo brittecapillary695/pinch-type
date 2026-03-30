@@ -1,4 +1,4 @@
-import { createPinchType, createScrollMorph, createPinchMorph } from '../../src/index.ts';
+import { createPinchType, createScrollMorph, createPinchMorph, pinchZoom } from '../../src/index.ts';
 
 const TEXT = `Build Places, Not Products
 
@@ -38,10 +38,12 @@ const DESCRIPTIONS = {
   pinch: 'Uniform text rendering. Pinch with two fingers to scale all text up or down. No fisheye effect.',
   morph: 'Text near the center is large and bright. Text at the edges shrinks and fades. A fisheye magnifying effect as you scroll.',
   combined: 'Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.',
+  lightweight: 'DOM-based pinch-to-zoom on regular HTML text. No canvas — just font-size changes. ~1KB, zero dependencies.',
 };
 
 let currentInstance = null;
 let currentMode = 'pinch';
+let lightweightCleanup = null;
 
 const creators = {
   pinch: (el) => createPinchType(el, { fontSize: 18 }),
@@ -49,8 +51,21 @@ const creators = {
   combined: (el) => createPinchMorph(el, { centerFontSize: 26, edgeFontSize: 11 }),
 };
 
+function formatTextAsHTML(text) {
+  return text.split('\n\n').map(p => {
+    const trimmed = p.trim();
+    if (!trimmed) return '';
+    // First paragraph or short ones = headings
+    if (trimmed.length < 60 && !trimmed.includes('.')) {
+      return `<h3 style="font-size:1.4em;margin:1.5em 0 0.5em;font-family:'Instrument Serif',Georgia,serif;font-weight:400">${trimmed}</h3>`;
+    }
+    return `<p style="margin:0 0 1em">${trimmed}</p>`;
+  }).join('\n');
+}
+
 function switchMode(mode) {
-  if (currentInstance) currentInstance.destroy();
+  if (currentInstance) { currentInstance.destroy(); currentInstance = null; }
+  if (lightweightCleanup) { lightweightCleanup(); lightweightCleanup = null; }
   currentMode = mode;
 
   // Update tabs
@@ -61,11 +76,27 @@ function switchMode(mode) {
   // Update description
   document.getElementById('mode-desc').textContent = DESCRIPTIONS[mode];
 
-  // Create new instance
-  const container = document.getElementById('demo-canvas');
-  currentInstance = creators[mode](container);
-  currentInstance.canvas.style.borderRadius = '12px';
-  currentInstance.setText(TEXT);
+  const canvasContainer = document.getElementById('demo-canvas');
+  const lwContainer = document.getElementById('demo-lightweight');
+
+  if (mode === 'lightweight') {
+    canvasContainer.style.display = 'none';
+    lwContainer.style.display = 'block';
+    lwContainer.innerHTML = formatTextAsHTML(TEXT);
+    lightweightCleanup = pinchZoom({
+      target: lwContainer,
+      min: 12,
+      max: 32,
+      initial: 16,
+      step: 1,
+    });
+  } else {
+    canvasContainer.style.display = 'block';
+    lwContainer.style.display = 'none';
+    currentInstance = creators[mode](canvasContainer);
+    currentInstance.canvas.style.borderRadius = '12px';
+    currentInstance.setText(TEXT);
+  }
 }
 
 function init() {

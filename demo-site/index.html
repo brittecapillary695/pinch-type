@@ -109,10 +109,12 @@ footer a:hover{color:#000}
     <button class="mode-tab active" data-mode="pinch">Pinch Type</button>
     <button class="mode-tab" data-mode="morph">Scroll Morph</button>
     <button class="mode-tab" data-mode="combined">Combined</button>
+    <button class="mode-tab" data-mode="lightweight">Lightweight</button>
   </div>
   <p id="mode-desc">Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.</p>
 
   <div id="demo-canvas"></div>
+  <div id="demo-lightweight" style="display:none;width:100%;height:70vh;min-height:500px;border-radius:2px;border:1px solid #e5e5e5;overflow:auto;padding:2rem;font-family:'Inter',system-ui,sans-serif;font-size:16px;line-height:1.7;color:#333;background:#fafafa"></div>
   <p class="demo-hint">📱 Pinch with two fingers to zoom text · 🖱️ Scroll wheel to navigate</p>
 </div>
 
@@ -131,6 +133,10 @@ footer a:hover{color:#000}
     <div class="feature">
       <h3>Combined</h3>
       <p>Both effects together. The scroll morph fisheye plus pinch-to-zoom scaling. The full experience.</p>
+    </div>
+    <div class="feature">
+      <h3>Lightweight Mode</h3>
+      <p>Just want pinch-to-zoom on your existing page? The lightweight API works on regular DOM text — no canvas, no dependencies, ~1KB. Vanilla JS or React hook.</p>
     </div>
     <div class="feature">
       <h3>Accurate Line Breaking</h3>

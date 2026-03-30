@@ -1,6 +1,6 @@
 {
   "name": "pinch-type",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pinch to zoom text, not the page. Canvas-based text scaling for mobile web.",
   "author": "Lucas Crespo",
   "license": "MIT",
@@ -39,7 +39,13 @@
     "url": "https://github.com/lucascrespo/pinch-type/issues"
   },
   "peerDependencies": {
-    "@chenglou/pretext": ">=0.0.2"
+    "@chenglou/pretext": ">=0.0.2",
+    "react": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@chenglou/pretext": "^0.0.2",

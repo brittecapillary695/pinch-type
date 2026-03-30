@@ -97,6 +97,51 @@ Combined: fisheye scroll effect + pinch-to-zoom.
 | `destroy()` | Remove canvas, listeners, and animation loop |
 | `canvas` | The underlying `<canvas>` element (read-only) |
 
+## Lightweight Mode
+
+Just want pinch-to-zoom on your existing page? Use the lightweight API — no canvas, no dependencies, ~1KB. Want the full canvas rendering experience? Use `createPinchType` / `createScrollMorph` / `createPinchMorph` above.
+
+### `pinchZoom(options?)` — Vanilla JS
+
+```ts
+import { pinchZoom } from 'pinch-type';
+
+const cleanup = pinchZoom({
+  target: document.getElementById('article'),  // default: document.documentElement
+  min: 12,        // min font size, default 12
+  max: 32,        // max font size, default 32
+  initial: 16,    // starting size, default 16
+  step: 1,        // px per zoom step, default 1
+  onZoom: (size) => console.log(size),
+});
+
+// Later: remove all listeners
+cleanup();
+```
+
+Detects two-finger touch pinch and trackpad pinch (ctrl+wheel / meta+wheel). Single-finger scroll is unaffected. Applies `font-size` directly to the target element.
+
+### `usePinchZoom(options?)` — React Hook
+
+Requires `react` as a peer dependency.
+
+```tsx
+import { usePinchZoom } from 'pinch-type';
+
+function Reader() {
+  const { fontSize, ref } = usePinchZoom({ min: 12, max: 32 });
+  return <article ref={ref} style={{ fontSize }}>...</article>;
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `min` | `number` | `12` | Minimum font size |
+| `max` | `number` | `32` | Maximum font size |
+| `initial` | `number` | `16` | Starting font size |
+| `step` | `number` | `1` | Pixels per zoom step |
+| `onZoom` | `(size) => void` | — | Callback after each zoom |
+
 ## How It Works
 
 Text is measured and wrapped using [`@chenglou/pretext`](https://github.com/chenglou/pretext) for accurate segment-aware line breaking. Each frame, lines are drawn to a canvas. For scroll morph, font size and opacity are interpolated based on distance from the viewport center (ease-out cubic). Touch events drive momentum scrolling with configurable friction, and two-finger pinch gestures scale the font size range in real time.

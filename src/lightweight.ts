@@ -104,11 +104,25 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
 
   target.style.fontSize = size + 'px';
 
-  function setSize(s: number) {
+  function setSize(s: number, anchorY?: number) {
     const clamped = clamp(Math.round(s), min, max);
     if (clamped !== size) {
+      const vy = anchorY ?? window.innerHeight / 2;
+      // Find element at the anchor point and record its viewport position
+      const anchor = getAnchorAtY(target, vy);
+      const beforeTop = anchor.element.getBoundingClientRect().top;
+
       size = clamped;
       target.style.fontSize = size + 'px';
+
+      // After reflow, compensate scroll so anchor stays at same viewport Y
+      const afterTop = anchor.element.getBoundingClientRect().top;
+      const drift = afterTop - beforeTop;
+      if (Math.abs(drift) > 0.5) {
+        // Use the target's scroll parent, NOT window
+        const sp = getScrollParent(target);
+        sp.scrollTop += drift;
+      }
       onZoom?.(size);
     }
   }
@@ -143,7 +157,8 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
     const delta = d - pinchStartDist;
     const steps = Math.trunc(delta / THRESHOLD);
     const newSize = pinchStartSize + steps * step;
-    setSize(newSize);
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    setSize(newSize, midY);
   }
 
   function onTouchEnd(e: TouchEvent) {
@@ -157,7 +172,7 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
     accumulator += e.deltaY;
     if (Math.abs(accumulator) >= 10) {
       const direction = accumulator > 0 ? -step : step;
-      setSize(size + direction);
+      setSize(size + direction, e.clientY);
       accumulator = 0;
     }
   }

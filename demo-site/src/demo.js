@@ -99,6 +99,9 @@ function switchMode(mode) {
   }
 }
 
+// Expose for pretext easter egg
+window.__pinchZoom = pinchZoom;
+
 function init() {
   // Setup tab listeners
   document.querySelectorAll('.mode-tab').forEach(tab => {

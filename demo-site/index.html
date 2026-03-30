@@ -65,12 +65,17 @@ section h2{font-size:2.2rem;margin-bottom:1.5rem}
 .feature p{color:#666;font-size:.9rem;line-height:1.7}
 
 /* Code */
-.code-block{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:3px;padding:1.25rem 1.5rem;overflow-x:auto;margin:1.5rem 0;font-size:.84rem;line-height:1.8}
+.code-block{position:relative;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:3px;padding:1.25rem 1.5rem;overflow-x:auto;margin:1.5rem 0;font-size:.84rem;line-height:1.8}
 .code-block code{font-family:"JetBrains Mono",monospace;color:#333}
 .code-block .comment{color:#999}
 .code-block .str{color:#555}
 .code-block .kw{color:#000;font-weight:500}
 .code-block .fn{color:#333}
+.copy-btn{position:absolute;top:.6rem;right:.6rem;background:transparent;border:1px solid #ddd;border-radius:3px;padding:4px 8px;font-size:.7rem;color:#aaa;cursor:pointer;font-family:"Inter",system-ui,sans-serif;transition:all .2s;line-height:1}
+.copy-btn:hover{color:#333;border-color:#999}
+.install-box{position:relative}
+.install-copy{position:absolute;top:50%;right:.75rem;transform:translateY(-50%);background:transparent;border:1px solid #ddd;border-radius:3px;padding:4px 8px;font-size:.7rem;color:#aaa;cursor:pointer;font-family:"Inter",system-ui,sans-serif;transition:all .2s;line-height:1}
+.install-copy:hover{color:#333;border-color:#999}
 
 /* Install */
 .install-box{display:flex;align-items:center;gap:.75rem;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:3px;padding:1rem 1.5rem;font-family:"JetBrains Mono",monospace;font-size:.9rem;margin:1rem 0}
@@ -84,6 +89,8 @@ section h2{font-size:2.2rem;margin-bottom:1.5rem}
 footer{text-align:center;padding:5rem 1.5rem 3rem;color:#bbb;font-size:.8rem;letter-spacing:.01em}
 footer a{color:#999;text-decoration:none}
 footer a:hover{color:#000}
+.easter-egg{display:block;margin:2rem auto 0;background:none;border:none;color:#ddd;font-size:.7rem;cursor:pointer;letter-spacing:.1em;transition:color .3s;font-family:"Inter",system-ui,sans-serif}
+.easter-egg:hover{color:#999}
 </style>
 <script data-goatcounter="https://pinchtype.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -172,9 +179,48 @@ instance.<span class="fn">destroy</span>();  <span class="comment">// clean up</
 
 <footer>
   Built by <a href="https://github.com/lucascrespo23">Lucas Crespo</a> · <a href="https://github.com/lucascrespo23/pinch-type">View on GitHub</a> · MIT License
+  <button class="easter-egg" onclick="location.href='?pretext=true'" title="">✦ try this page differently</button>
 </footer>
 
 <script src="dist/demo.js"></script>
 <script src="analytics.js"></script>
+<script>
+// Copy buttons
+document.querySelectorAll('.code-block').forEach(block => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'Copy';
+  btn.addEventListener('click', () => {
+    const code = block.querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  });
+  block.appendChild(btn);
+});
+document.querySelectorAll('.install-box').forEach(box => {
+  const btn = document.createElement('button');
+  btn.className = 'install-copy';
+  btn.textContent = 'Copy';
+  btn.addEventListener('click', () => {
+    const cmd = box.querySelector('.cmd').textContent;
+    navigator.clipboard.writeText(cmd).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  });
+  box.appendChild(btn);
+});
+
+// Pretext easter egg
+if (new URLSearchParams(location.search).has('pretext')) {
+  window.addEventListener('load', () => {
+    if (window.__pinchZoom) {
+      window.__pinchZoom({ target: document.body, min: 10, max: 40, initial: 15, step: 1 });
+    }
+  });
+}
+</script>
 </body>
 </html>

@@ -98,36 +98,24 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
   let size = options.initial ?? 16;
   let pinchStartDist = 0;
   let pinchStartSize = 0;
+  let pinchActive = false;
   let accumulator = 0;
   const THRESHOLD = 20; // px of pinch distance per step
 
   target.style.fontSize = size + 'px';
 
-  function setSize(s: number, anchorY?: number) {
+  function setSize(s: number) {
     const clamped = clamp(Math.round(s), min, max);
     if (clamped !== size) {
-      // Find the scrollable ancestor
-      const scrollParent = getScrollParent(target);
-      const vy = anchorY ?? window.innerHeight / 2;
-
-      // Capture anchor: element at viewport Y + its position relative to viewport
-      const anchor = getAnchorAtY(target, vy);
-      const beforeRect = anchor.element.getBoundingClientRect();
-      const beforeTop = beforeRect.top;
-
-      // Apply new size
       size = clamped;
       target.style.fontSize = size + 'px';
-
-      // After reflow, see how much the anchor moved and compensate
-      const afterRect = anchor.element.getBoundingClientRect();
-      const drift = afterRect.top - beforeTop;
-      if (Math.abs(drift) > 0.5) {
-        scrollParent.scrollTop += drift;
-      }
-
       onZoom?.(size);
     }
+  }
+
+  // Block ALL scrolling on the page during an active pinch gesture
+  function blockScroll(e: Event) {
+    if (pinchActive) e.preventDefault();
   }
 
   function dist(e: TouchEvent) {
@@ -139,6 +127,8 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
   function onTouchStart(e: TouchEvent) {
     if (e.touches.length === 2) {
       e.preventDefault();
+      e.stopPropagation();
+      pinchActive = true;
       pinchStartDist = dist(e);
       pinchStartSize = size;
       accumulator = 0;
@@ -147,34 +137,44 @@ export function pinchZoom(options: PinchZoomOptions = {}): () => void {
 
   function onTouchMove(e: TouchEvent) {
     if (e.touches.length !== 2) return;
+    e.preventDefault();
+    e.stopPropagation();
     const d = dist(e);
     const delta = d - pinchStartDist;
     const steps = Math.trunc(delta / THRESHOLD);
     const newSize = pinchStartSize + steps * step;
-    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    setSize(newSize, midY);
-    e.preventDefault();
+    setSize(newSize);
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    if (e.touches.length < 2) pinchActive = false;
   }
 
   function onWheel(e: WheelEvent) {
     if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
+    e.stopPropagation();
     accumulator += e.deltaY;
     if (Math.abs(accumulator) >= 10) {
       const direction = accumulator > 0 ? -step : step;
-      setSize(size + direction, e.clientY);
+      setSize(size + direction);
       accumulator = 0;
     }
   }
 
   target.addEventListener('touchstart', onTouchStart, { passive: false });
   target.addEventListener('touchmove', onTouchMove, { passive: false });
+  target.addEventListener('touchend', onTouchEnd);
   target.addEventListener('wheel', onWheel, { passive: false });
+  // Block page scroll during pinch at document level
+  document.addEventListener('touchmove', blockScroll, { passive: false });
 
   return () => {
     target.removeEventListener('touchstart', onTouchStart);
     target.removeEventListener('touchmove', onTouchMove);
+    target.removeEventListener('touchend', onTouchEnd);
     target.removeEventListener('wheel', onWheel);
+    document.removeEventListener('touchmove', blockScroll);
   };
 }
 

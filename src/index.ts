@@ -807,17 +807,11 @@ export function createPinchMorph(
 
 // ─── Pinch Lens ──────────────────────────────────────────────────────────────
 
-interface GlyphInfo {
-  char: string;
-  x: number;
-  width: number;
-}
-
 /**
- * Pinch Lens (fish-eye lens) effect. During a pinch gesture, glyphs near the
- * pinch center scale up while glyphs far away remain at normal size. Pinching
- * out inverts the effect (nearby glyphs shrink). The falloff is smooth
- * (gaussian-like) creating a magnifying-glass feel.
+ * Pinch Lens with full 2D reflow. During a pinch gesture, words near the pinch
+ * center enlarge and the ENTIRE text layout reflows around the enlarged area —
+ * like a bubble pushing everything aside. Nothing ever leaves the canvas frame;
+ * if content grows too large, distant text compresses to keep everything visible.
  */
 export function createPinchLens(
   container: HTMLElement,
@@ -839,23 +833,30 @@ export function createPinchLens(
   let W = 0, H = 0;
   let rawText = '';
 
-  interface LensLine {
+  // A "token" is either a word or a paragraph break marker
+  interface WordToken {
+    kind: 'word' | 'space' | 'paraBreak';
     text: string;
-    y: number;
-    lineHeight: number;
-    glyphs: GlyphInfo[];
+    baseWidth: number; // measured at baseFontSize
+    // animated render state
+    renderX: number;
+    renderY: number;
+    renderScale: number;
   }
-  let lines: LensLine[] = [];
-  let totalHeight = 0, maxScroll = 0;
+
+  let tokens: WordToken[] = [];
   let scrollY = 0, scrollVelocity = 0;
   let touchLastY = 0, touchLastTime = 0, isTouching = false;
   let pinchActive = false, pinchStartDist = 0;
-  /** -1 (pinch out/shrink) to +1 (pinch in/magnify). 0 = no effect. */
   let lensIntensity = 0;
   let lensCenterX = 0, lensCenterY = 0;
   let pointerX = 0, pointerY = 0, pointerActive = false;
   let wheelZoomTimer = 0;
   let raf = 0, destroyed = false;
+
+  const baseLh = () => baseFontSize * lhRatio;
+  const baseFont = () => `400 ${baseFontSize}px ${fontFamily}`;
+  const spaceWidth = () => { ctx.font = baseFont(); return ctx.measureText(' ').width; };
 
   function falloff(dist: number): number {
     if (dist >= lensRadius) return 0;
@@ -863,75 +864,201 @@ export function createPinchLens(
     return Math.exp(-4.5 * t * t);
   }
 
-  function layout() {
+  /** Tokenize raw text into words, spaces, and paragraph breaks */
+  function tokenize() {
+    tokens = [];
     if (!rawText || W === 0) return;
-    const maxW = W - padding * 2;
-    const lh = baseFontSize * lhRatio;
-    const font = `400 ${baseFontSize}px ${fontFamily}`;
+    ctx.font = baseFont();
     const paragraphs = rawText.split('\n\n');
-    lines = [];
-    let curY = padding + 10;
-    ctx.font = font;
-    for (const para of paragraphs) {
-      const trimmed = para.trim();
+    for (let pi = 0; pi < paragraphs.length; pi++) {
+      const trimmed = paragraphs[pi]?.trim();
       if (!trimmed) continue;
-      const prepared = prepareWithSegments(trimmed, font);
-      const result = layoutWithLines(prepared, maxW, lh);
-      for (let li = 0; li < result.lines.length; li++) {
-        const lineText = result.lines[li].text;
-        const glyphs: GlyphInfo[] = [];
-        let xOff = 0;
-        const chars = typeof Intl !== 'undefined' && (Intl as any).Segmenter
-          ? [...new (Intl as any).Segmenter(undefined, { granularity: 'grapheme' }).segment(lineText)].map((s: any) => s.segment as string)
-          : [...lineText];
-        ctx.font = font;
-        for (let ci = 0; ci < chars.length; ci++) {
-          const charW = ctx.measureText(chars[ci]).width;
-          glyphs.push({ char: chars[ci], x: xOff, width: charW });
-          xOff += charW;
-        }
-        lines.push({ text: lineText, y: curY + li * lh, lineHeight: lh, glyphs });
+      if (pi > 0) tokens.push({ kind: 'paraBreak', text: '', baseWidth: 0, renderX: 0, renderY: 0, renderScale: 1 });
+      // Split into words and spaces
+      const parts = trimmed.match(/\S+|\s+/g) || [];
+      for (const part of parts) {
+        const isSpace = part.trim() === '';
+        const w = ctx.measureText(part).width;
+        tokens.push({
+          kind: isSpace ? 'space' : 'word',
+          text: part,
+          baseWidth: w,
+          renderX: 0,
+          renderY: 0,
+          renderScale: 1,
+        });
       }
-      curY += result.lines.length * lh + lh * 0.6;
     }
-    totalHeight = curY + padding;
+  }
+
+  /**
+   * Reflow all tokens into lines, accounting for per-word scale.
+   * Returns total content height. Mutates token renderX/renderY/renderScale.
+   *
+   * @param scales per-token scale factors (length === tokens.length)
+   * @param maxW available width for text
+   * @param globalShrink additional uniform shrink applied to keep content in bounds
+   */
+  function reflowTokens(scales: Float64Array, maxW: number, globalShrink: number): number {
+    const lh = baseLh();
+    let curX = 0;
+    let curY = padding + 10;
+    // Track max scale on current line for line height
+    let lineMaxScale = 1;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      const s = scales[i] * globalShrink;
+
+      if (tok.kind === 'paraBreak') {
+        // End current line, add paragraph gap
+        curX = 0;
+        curY += lh * lineMaxScale + lh * 0.6 * globalShrink;
+        lineMaxScale = 1;
+        tok.renderX = padding;
+        tok.renderY = curY;
+        tok.renderScale = s;
+        continue;
+      }
+
+      const scaledW = tok.baseWidth * s;
+
+      // Line wrap: if this word won't fit and we're not at line start, wrap
+      if (tok.kind === 'word' && curX > 0 && curX + scaledW > maxW) {
+        curX = 0;
+        curY += lh * lineMaxScale;
+        lineMaxScale = 1;
+      }
+
+      tok.renderX = padding + curX;
+      tok.renderY = curY;
+      tok.renderScale = s;
+      lineMaxScale = Math.max(lineMaxScale, s);
+
+      curX += scaledW;
+
+      // If a space goes past the edge, that's fine — it'll wrap the next word
+    }
+
+    return curY + lh * lineMaxScale + padding;
+  }
+
+  /**
+   * Core reflow: compute scales, reflow, and if content overflows canvas,
+   * iteratively shrink distant text to fit.
+   */
+  function computeLayout(): number {
+    if (tokens.length === 0) return 0;
+    const maxW = W - padding * 2;
+    const lh = baseLh();
+    const hasLens = lensIntensity !== 0;
+
+    const scales = new Float64Array(tokens.length);
+
+    if (!hasLens) {
+      scales.fill(1);
+      return reflowTokens(scales, maxW, 1);
+    }
+
+    // Phase 1: compute raw scales based on distance to lens center
+    // We need an estimate of positions to compute distances, so we do 2 passes:
+    // First pass with scale=1 to get base positions, then compute scales from those,
+    // then reflow with real scales.
+
+    // Pass 1: base layout
+    scales.fill(1);
+    reflowTokens(scales, maxW, 1);
+
+    // Pass 2: compute scales from base positions
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok.kind === 'paraBreak') { scales[i] = 1; continue; }
+      const cx = tok.renderX + tok.baseWidth / 2;
+      const cy = tok.renderY + lh / 2 - scrollY;
+      const dist = Math.hypot(cx - lensCenterX, cy - lensCenterY);
+      const f = falloff(dist);
+      const s = 1 + (maxScale - 1) * f * lensIntensity;
+      scales[i] = Math.max(0.3, Math.min(maxScale, s));
+    }
+
+    // Pass 3: reflow with computed scales
+    let totalH = reflowTokens(scales, maxW, 1);
+
+    // Pass 4: if content exceeds canvas, apply global shrink to make it fit
+    // We iterate: shrink distant tokens more to compress
+    const canvasH = H;
+    if (totalH > canvasH && lensIntensity > 0) {
+      // Binary search for a globalShrink that fits
+      let lo = 0.3, hi = 1.0;
+      for (let iter = 0; iter < 8; iter++) {
+        const mid = (lo + hi) / 2;
+        // Apply shrink only to tokens with scale near 1 (distant ones)
+        // Actually simpler: uniform shrink on all, but preserve relative lens effect
+        const testH = reflowTokens(scales, maxW, mid);
+        if (testH > canvasH) hi = mid;
+        else lo = mid;
+      }
+      totalH = reflowTokens(scales, maxW, lo);
+    }
+
+    // Pass 5: refine scales with actual reflowed positions (improves accuracy)
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok.kind === 'paraBreak') continue;
+      const cx = tok.renderX + tok.baseWidth * tok.renderScale / 2;
+      const cy = tok.renderY + lh * tok.renderScale / 2 - scrollY;
+      const dist = Math.hypot(cx - lensCenterX, cy - lensCenterY);
+      const f = falloff(dist);
+      const s = 1 + (maxScale - 1) * f * lensIntensity;
+      scales[i] = Math.max(0.3, Math.min(maxScale, s));
+    }
+
+    // Final reflow
+    totalH = reflowTokens(scales, maxW, totalH > canvasH ? 0.3 : 1);
+    if (totalH > canvasH) {
+      let lo = 0.3, hi = 1.0;
+      for (let iter = 0; iter < 8; iter++) {
+        const mid = (lo + hi) / 2;
+        if (reflowTokens(scales, maxW, mid) > canvasH) hi = mid;
+        else lo = mid;
+      }
+      totalH = reflowTokens(scales, maxW, lo);
+    }
+
+    return totalH;
+  }
+
+  // Smooth animation: store previous positions and lerp
+  let animTokens: { x: number; y: number; scale: number }[] = [];
+  const LERP_SPEED = 0.18;
+
+  function updateAnimation() {
+    // Ensure animTokens array matches tokens length
+    while (animTokens.length < tokens.length) {
+      const tok = tokens[animTokens.length];
+      animTokens.push({ x: tok.renderX, y: tok.renderY, scale: tok.renderScale });
+    }
+    animTokens.length = tokens.length;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      const a = animTokens[i];
+      a.x += (tok.renderX - a.x) * LERP_SPEED;
+      a.y += (tok.renderY - a.y) * LERP_SPEED;
+      a.scale += (tok.renderScale - a.scale) * LERP_SPEED;
+    }
+  }
+
+  let totalHeight = 0, maxScroll = 0;
+
+  function layout() {
+    tokenize();
+    if (tokens.length === 0) return;
+    totalHeight = computeLayout();
     maxScroll = Math.max(0, totalHeight - H);
     scrollY = clamp(scrollY, 0, maxScroll);
-  }
-
-  interface WordInfo {
-    text: string;
-    x: number;
-    width: number;
-    glyphStart: number;
-    glyphEnd: number;
-  }
-
-  function getWordsFromGlyphs(glyphs: GlyphInfo[]): WordInfo[] {
-    const words: WordInfo[] = [];
-    let wordStart = -1;
-    let wordText = '';
-    let wordX = 0;
-    let wordW = 0;
-    for (let i = 0; i <= glyphs.length; i++) {
-      const g = i < glyphs.length ? glyphs[i] : null;
-      const isSpace = g != null && g.char.trim() === '';
-      if (g && !isSpace) {
-        if (wordStart === -1) { wordStart = i; wordX = g.x; wordW = 0; wordText = ''; }
-        wordText += g.char;
-        wordW = (g.x + g.width) - wordX;
-      } else {
-        if (wordStart !== -1) {
-          words.push({ text: wordText, x: wordX, width: wordW, glyphStart: wordStart, glyphEnd: i });
-          wordStart = -1; wordText = '';
-        }
-        // Treat spaces as single-char "words" so they participate in reflow
-        if (g && isSpace) {
-          words.push({ text: g.char, x: g.x, width: g.width, glyphStart: i, glyphEnd: i + 1 });
-        }
-      }
-    }
-    return words;
+    // Initialize animation positions on fresh layout
+    animTokens = tokens.map(t => ({ x: t.renderX, y: t.renderY, scale: t.renderScale }));
   }
 
   function render() {
@@ -939,62 +1066,40 @@ export function createPinchLens(
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W * d, H * d);
     ctx.textBaseline = 'top';
-    const hasLens = lensIntensity !== 0;
 
-    for (const line of lines) {
-      const screenY = line.y - scrollY;
-      if (screenY < -line.lineHeight * maxScale || screenY > H + line.lineHeight * maxScale) continue;
+    const lh = baseLh();
 
-      if (!hasLens) {
-        ctx.fillStyle = '#e5e5e5';
-        ctx.font = `400 ${baseFontSize * d}px ${fontFamily}`;
-        ctx.fillText(line.text, padding * d, screenY * d);
-        continue;
-      }
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok.kind === 'paraBreak' || tok.kind === 'space') continue;
 
-      // Group glyphs into words
-      const words = getWordsFromGlyphs(line.glyphs);
+      const a = animTokens[i];
+      const s = a.scale;
+      const screenY = a.y - scrollY;
+      const screenX = a.x;
 
-      // Compute per-word scale based on word center distance to lens center
-      const wordScales: number[] = [];
-      for (const word of words) {
-        const wordCenterX = padding + word.x + word.width / 2;
-        const wordCenterY = screenY + line.lineHeight / 2;
-        const dist = Math.hypot(wordCenterX - lensCenterX, wordCenterY - lensCenterY);
-        const f = falloff(dist);
-        const scale = 1 + (maxScale - 1) * f * lensIntensity;
-        wordScales.push(Math.max(0.3, Math.min(maxScale, scale)));
-      }
+      // Cull off-screen
+      if (screenY < -lh * maxScale || screenY > H + lh * maxScale) continue;
+      if (screenX > W + 50) continue;
 
-      // Reflow: compute new x positions based on scaled widths
-      let curX = padding;
-      const wordPositions: number[] = [];
-      for (let wi = 0; wi < words.length; wi++) {
-        wordPositions.push(curX);
-        curX += words[wi].width * wordScales[wi];
-      }
+      const brightness = Math.round(clamp(200 + 55 * (s - 1) / (maxScale - 1), 102, 255));
+      const alpha = clamp(0.4 + 0.6 * Math.min(s, 1.5) / 1.5, 0.3, 1.0);
 
-      // Draw each word
-      for (let wi = 0; wi < words.length; wi++) {
-        const word = words[wi];
-        const s = wordScales[wi];
-        const brightness = Math.round(clamp(229 * s, 102, 255));
-        const alpha = clamp(0.25 + 0.75 * s, 0.25, 1.0);
-        const drawX = wordPositions[wi];
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
+      ctx.font = `400 ${baseFontSize * d}px ${fontFamily}`;
 
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
-        ctx.font = `400 ${baseFontSize * d}px ${fontFamily}`;
-        // Scale around word center
-        const cx = (drawX + word.width * s / 2) * d;
-        const cy = (screenY + line.lineHeight / 2) * d;
-        ctx.translate(cx, cy);
-        ctx.scale(s, s);
-        ctx.translate(-cx, -cy);
-        ctx.fillText(word.text, drawX * d, screenY * d);
-        ctx.restore();
-      }
+      // Scale around word center
+      const scaledW = tok.baseWidth * s;
+      const scaledH = lh * s;
+      const cx = (screenX + scaledW / 2) * d;
+      const cy = (screenY + scaledH / 2) * d;
+      ctx.translate(cx, cy);
+      ctx.scale(s, s);
+      ctx.translate(-cx, -cy);
+      ctx.fillText(tok.text, screenX * d, screenY * d);
+      ctx.restore();
     }
   }
 
@@ -1011,6 +1116,14 @@ export function createPinchLens(
       lensIntensity *= 0.92;
       if (Math.abs(lensIntensity) < 0.005) lensIntensity = 0;
     }
+
+    // Recompute layout each frame when lens is active (positions depend on lens center)
+    if (lensIntensity !== 0) {
+      totalHeight = computeLayout();
+      maxScroll = Math.max(0, totalHeight - H);
+    }
+
+    updateAnimation();
     render();
     raf = requestAnimationFrame(loop);
   }

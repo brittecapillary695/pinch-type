@@ -899,6 +899,41 @@ export function createPinchLens(
     scrollY = clamp(scrollY, 0, maxScroll);
   }
 
+  interface WordInfo {
+    text: string;
+    x: number;
+    width: number;
+    glyphStart: number;
+    glyphEnd: number;
+  }
+
+  function getWordsFromGlyphs(glyphs: GlyphInfo[]): WordInfo[] {
+    const words: WordInfo[] = [];
+    let wordStart = -1;
+    let wordText = '';
+    let wordX = 0;
+    let wordW = 0;
+    for (let i = 0; i <= glyphs.length; i++) {
+      const g = i < glyphs.length ? glyphs[i] : null;
+      const isSpace = g != null && g.char.trim() === '';
+      if (g && !isSpace) {
+        if (wordStart === -1) { wordStart = i; wordX = g.x; wordW = 0; wordText = ''; }
+        wordText += g.char;
+        wordW = (g.x + g.width) - wordX;
+      } else {
+        if (wordStart !== -1) {
+          words.push({ text: wordText, x: wordX, width: wordW, glyphStart: wordStart, glyphEnd: i });
+          wordStart = -1; wordText = '';
+        }
+        // Treat spaces as single-char "words" so they participate in reflow
+        if (g && isSpace) {
+          words.push({ text: g.char, x: g.x, width: g.width, glyphStart: i, glyphEnd: i + 1 });
+        }
+      }
+    }
+    return words;
+  }
+
   function render() {
     const d = dpr;
     ctx.fillStyle = bg;
@@ -917,26 +952,47 @@ export function createPinchLens(
         continue;
       }
 
-      for (const glyph of line.glyphs) {
-        const gx = padding + glyph.x + glyph.width / 2;
-        const gy = screenY + line.lineHeight / 2;
-        const dist = Math.hypot(gx - lensCenterX, gy - lensCenterY);
+      // Group glyphs into words
+      const words = getWordsFromGlyphs(line.glyphs);
+
+      // Compute per-word scale based on word center distance to lens center
+      const wordScales: number[] = [];
+      for (const word of words) {
+        const wordCenterX = padding + word.x + word.width / 2;
+        const wordCenterY = screenY + line.lineHeight / 2;
+        const dist = Math.hypot(wordCenterX - lensCenterX, wordCenterY - lensCenterY);
         const f = falloff(dist);
         const scale = 1 + (maxScale - 1) * f * lensIntensity;
-        const clampedScale = Math.max(0.3, Math.min(maxScale, scale));
-        const brightness = Math.round(clamp(229 * clampedScale, 102, 255));
-        const alpha = clamp(0.25 + 0.75 * clampedScale, 0.25, 1.0);
+        wordScales.push(Math.max(0.3, Math.min(maxScale, scale)));
+      }
+
+      // Reflow: compute new x positions based on scaled widths
+      let curX = padding;
+      const wordPositions: number[] = [];
+      for (let wi = 0; wi < words.length; wi++) {
+        wordPositions.push(curX);
+        curX += words[wi].width * wordScales[wi];
+      }
+
+      // Draw each word
+      for (let wi = 0; wi < words.length; wi++) {
+        const word = words[wi];
+        const s = wordScales[wi];
+        const brightness = Math.round(clamp(229 * s, 102, 255));
+        const alpha = clamp(0.25 + 0.75 * s, 0.25, 1.0);
+        const drawX = wordPositions[wi];
 
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = `rgb(${brightness},${brightness},${brightness})`;
         ctx.font = `400 ${baseFontSize * d}px ${fontFamily}`;
-        const cx = (padding + glyph.x + glyph.width / 2) * d;
+        // Scale around word center
+        const cx = (drawX + word.width * s / 2) * d;
         const cy = (screenY + line.lineHeight / 2) * d;
         ctx.translate(cx, cy);
-        ctx.scale(clampedScale, clampedScale);
+        ctx.scale(s, s);
         ctx.translate(-cx, -cy);
-        ctx.fillText(glyph.char, (padding + glyph.x) * d, screenY * d);
+        ctx.fillText(word.text, drawX * d, screenY * d);
         ctx.restore();
       }
     }
@@ -1008,7 +1064,7 @@ export function createPinchLens(
     if (pinchActive && e.touches.length === 2) {
       const dist = pinchDistCalc(e);
       const scale = dist / pinchStartDist;
-      lensIntensity = clamp(1 - scale, -1, 1);
+      lensIntensity = clamp(scale - 1, -1, 1);
       const mid = getTouchMidpoint(e);
       lensCenterX = mid.x;
       lensCenterY = mid.y;

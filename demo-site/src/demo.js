@@ -1,4 +1,4 @@
-import { createPinchType, createScrollMorph, createPinchMorph, createPinchLens, pinchZoom } from '../../src/index.ts';
+import { createPinchType, createScrollMorph, createPinchMorph, pinchZoom } from '../../src/index.ts';
 
 const TEXT = `Build Places, Not Products
 
@@ -39,7 +39,6 @@ const DESCRIPTIONS = {
   morph: 'Text near the center is large and bright. Text at the edges shrinks and fades. A fisheye magnifying effect as you scroll.',
   combined: 'Both effects together — the fisheye scroll morph plus pinch-to-zoom text scaling.',
   lightweight: 'DOM-based pinch-to-zoom on regular HTML text. No canvas — just font-size changes. ~1KB, zero dependencies.',
-  lens: 'Pinch to magnify words near your fingers. A fish-eye lens for text.',
 };
 
 let currentInstance = null;
@@ -50,7 +49,6 @@ const creators = {
   pinch: (el) => createPinchType(el, { fontSize: 18 }),
   morph: (el) => createScrollMorph(el, { centerFontSize: 26, edgeFontSize: 11 }),
   combined: (el) => createPinchMorph(el, { centerFontSize: 26, edgeFontSize: 11 }),
-  lens: (el) => createPinchLens(el, { fontSize: 18, lensRadius: 200, maxScale: 2.5 }),
 };
 
 function formatTextAsHTML(text) {

